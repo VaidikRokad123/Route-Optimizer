@@ -1,0 +1,24 @@
+# Dependencies
+frontend/node_modules/
+backend/__pycache__/
+backend/uploads/
+
+# Build
+frontend/dist/
+
+# Environment
+.env
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Output files
+optimized_routes.csv
+routes_summary.csv
+garbage_routes.html
