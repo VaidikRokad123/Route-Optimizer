@@ -116,15 +116,23 @@ function Dashboard({ data, onOptimized }) {
                             <div className="stat-value">{data.total_distance_km}</div>
                             <div className="stat-label">Total Distance (km)</div>
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">⚡</div>
-                            <div className="stat-value">
-                                {data.total_houses > 0
-                                    ? (data.total_distance_km / data.total_houses).toFixed(2)
-                                    : '—'}
+                        {data.max_cluster_size ? (
+                            <div className="stat-card">
+                                <div className="stat-icon">📦</div>
+                                <div className="stat-value">≤ {data.max_cluster_size}</div>
+                                <div className="stat-label">Max Houses/Truck</div>
                             </div>
-                            <div className="stat-label">Avg km/house</div>
-                        </div>
+                        ) : (
+                            <div className="stat-card">
+                                <div className="stat-icon">⚡</div>
+                                <div className="stat-value">
+                                    {data.total_houses > 0
+                                        ? (data.total_distance_km / data.total_houses).toFixed(2)
+                                        : '—'}
+                                </div>
+                                <div className="stat-label">Avg km/house</div>
+                            </div>
+                        )}
                     </div>
                 )}
 

@@ -8,6 +8,8 @@ function Upload({ onOptimized }) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const [clusters, setClusters] = useState(20)
+    const [clusterSize, setClusterSize] = useState(25)
+    const [mode, setMode] = useState('trucks') // 'trucks' or 'size'
     const navigate = useNavigate()
 
     const onDrop = useCallback((acceptedFiles) => {
@@ -26,6 +28,11 @@ function Upload({ onOptimized }) {
         maxFiles: 1,
     })
 
+    const buildQuery = () => {
+        if (mode === 'size') return `cluster_size=${clusterSize}`
+        return `clusters=${clusters}`
+    }
+
     const handleOptimize = async () => {
         if (!file) return
         setLoading(true)
@@ -35,7 +42,7 @@ function Upload({ onOptimized }) {
         formData.append('file', file)
 
         try {
-            const res = await axios.post(`/api/optimize?clusters=${clusters}`, formData, {
+            const res = await axios.post(`/api/optimize?${buildQuery()}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             })
             onOptimized(res.data)
@@ -51,7 +58,7 @@ function Upload({ onOptimized }) {
         setLoading(true)
         setError(null)
         try {
-            const res = await axios.get(`/api/optimize/demo?clusters=${clusters}`)
+            const res = await axios.get(`/api/optimize/demo?${buildQuery()}`)
             onOptimized(res.data)
             navigate('/dashboard')
         } catch (err) {
@@ -101,23 +108,73 @@ function Upload({ onOptimized }) {
                         </div>
                     )}
 
-                    {/* Clusters selector */}
+                    {/* Cluster mode toggle */}
                     <div style={{
-                        marginTop: 20,
+                        marginTop: 24,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: 0,
+                    }}>
+                        <button
+                            onClick={() => setMode('trucks')}
+                            style={{
+                                padding: '10px 22px',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px 0 0 8px',
+                                cursor: 'pointer',
+                                background: mode === 'trucks'
+                                    ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))'
+                                    : 'var(--bg-card)',
+                                color: mode === 'trucks' ? '#fff' : 'var(--text-secondary)',
+                                transition: 'all 0.2s ease',
+                            }}
+                        >
+                            🚛 By Number of Trucks
+                        </button>
+                        <button
+                            onClick={() => setMode('size')}
+                            style={{
+                                padding: '10px 22px',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                border: '1px solid var(--border-color)',
+                                borderLeft: 'none',
+                                borderRadius: '0 8px 8px 0',
+                                cursor: 'pointer',
+                                background: mode === 'size'
+                                    ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))'
+                                    : 'var(--bg-card)',
+                                color: mode === 'size' ? '#fff' : 'var(--text-secondary)',
+                                transition: 'all 0.2s ease',
+                            }}
+                        >
+                            📦 By Max Houses/Truck
+                        </button>
+                    </div>
+
+                    {/* Cluster settings */}
+                    <div style={{
+                        marginTop: 16,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 14,
                         justifyContent: 'center',
                     }}>
                         <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                            Number of trucks:
+                            {mode === 'trucks' ? 'Number of trucks:' : 'Max houses per truck:'}
                         </label>
                         <input
                             type="number"
-                            min="2"
-                            max="50"
-                            value={clusters}
-                            onChange={(e) => setClusters(Number(e.target.value))}
+                            min={mode === 'trucks' ? 2 : 5}
+                            max={mode === 'trucks' ? 50 : 200}
+                            value={mode === 'trucks' ? clusters : clusterSize}
+                            onChange={(e) => {
+                                const val = Number(e.target.value)
+                                if (mode === 'trucks') setClusters(val)
+                                else setClusterSize(val)
+                            }}
                             style={{
                                 width: 70,
                                 padding: '8px 12px',
@@ -131,6 +188,18 @@ function Upload({ onOptimized }) {
                             }}
                         />
                     </div>
+
+                    {mode === 'size' && (
+                        <p style={{
+                            textAlign: 'center',
+                            color: 'var(--text-muted)',
+                            fontSize: '0.78rem',
+                            marginTop: 6,
+                            fontStyle: 'italic',
+                        }}>
+                            Trucks will be auto-calculated to ensure each has ≤ {clusterSize} houses
+                        </p>
+                    )}
 
                     <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 28 }}>
                         <button
@@ -160,3 +229,4 @@ function Upload({ onOptimized }) {
 }
 
 export default Upload
+

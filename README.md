@@ -1,23 +1,72 @@
 # 🛣️ RouteAI — Smart Route Optimizer
 
-AI-powered garbage truck route optimization system that clusters delivery points and finds the shortest path for each truck.
+AI-powered garbage truck route optimization system that clusters delivery points and computes the shortest possible route for each truck using classical optimization algorithms.
 
-## How It Works
+---
 
-1. **Upload** an Excel file with house locations and depot coordinates
-2. **K-Means Clustering** groups houses into clusters (one per truck)
-3. **TSP Solver** (Nearest Neighbor + 2-Opt) finds the optimal route within each cluster
-4. **Interactive Map** displays all routes with color-coded paths
+## 🚀 Overview
 
-## Tech Stack
+RouteAI helps municipalities and logistics teams optimize garbage collection routes by:
+- Reducing total travel distance
+- Balancing workload across trucks
+- Visualizing routes interactively on a real-world map
+
+The system combines **AI techniques and graph algorithms** with a modern web interface to deliver efficient and interpretable routing solutions.
+
+---
+
+## 🧠 How It Works
+
+1. Upload an Excel file containing house locations and depot coordinates
+2. **K-Means Clustering** groups houses into clusters (one cluster per truck)
+3. **TSP Solver (Nearest Neighbor + 2-Opt)** finds the shortest route for each cluster
+4. Routes and statistics are displayed on an **interactive dashboard and map**
+
+---
+
+## 📸 Application Screenshots
+
+> 📂 Place all screenshots inside the `/screenshots` directory
+
+### 🔹 Upload & Optimization Setup
+Excel upload interface with truck count selection.
+
+<img width="1919" height="914" alt="Screenshot 2026-02-19 133044" src="https://github.com/user-attachments/assets/4e7a249f-3f06-412c-bb61-3827e2953172" />
+
+
+---
+
+### 🔹 Route Optimization Dashboard
+Dashboard showing optimization summary and performance metrics.
+
+<img width="1919" height="914" alt="Screenshot 2026-02-19 133112" src="https://github.com/user-attachments/assets/f70d10ca-9083-403c-ba62-5aaaddccff33" />
+
+<img width="1339" height="465" alt="Screenshot 2026-02-19 133138" src="https://github.com/user-attachments/assets/f10055cb-67d3-41c8-94c5-56140a4661df" />
+
+
+---
+
+### 🔹 Interactive Map Visualization
+Color-coded optimized routes for each truck on a real city map.
+
+<img width="1919" height="876" alt="image" src="https://github.com/user-attachments/assets/5ec1a767-997f-48e6-9f15-a52ac36ba680" />
+
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+|-----|-----------|
 | Frontend | React, Vite, Leaflet.js |
 | Backend | Python, Flask |
-| Algorithm | K-Means, Nearest Neighbor TSP, 2-Opt |
+| Algorithms | K-Means, Nearest Neighbor TSP, 2-Opt |
+| Data | Excel (.xlsx) |
 
-## Project Structure
+---
+
+## 📁 Project Structure
+
 
 ```
 ├── backend/

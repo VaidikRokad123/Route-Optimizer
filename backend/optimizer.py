@@ -1,12 +1,12 @@
 """
 Core route optimization logic.
-K-Means clustering + Nearest Neighbor TSP + 2-Opt improvement.
+K-Means clustering + Balanced Assignment + Nearest Neighbor TSP + 2-Opt improvement.
 """
 
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
-from math import radians, sin, cos, sqrt, atan2
+from math import radians, sin, cos, sqrt, atan2, ceil
 
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -25,6 +25,62 @@ def dist_matrix(coords):
         for j in range(i + 1, n):
             D[i, j] = D[j, i] = haversine(*coords[i], *coords[j])
     return D
+
+
+def balanced_cluster_assignment(coords, centroids, max_size):
+    """
+    Assign points to nearest centroid while respecting max cluster size.
+
+    Algorithm:
+    1. Compute distance from every point to every centroid.
+    2. Create a list of (distance, point_idx, centroid_idx) tuples.
+    3. Sort by distance (closest first).
+    4. Greedily assign each point to its nearest centroid that still has capacity.
+
+    Returns:
+        numpy array of cluster labels (same shape as coords rows).
+    """
+    n_points = len(coords)
+    k = len(centroids)
+    labels = np.full(n_points, -1, dtype=int)
+    cluster_counts = np.zeros(k, dtype=int)
+
+    # Compute all distances: points × centroids
+    distances = np.zeros((n_points, k))
+    for i in range(n_points):
+        for j in range(k):
+            distances[i, j] = haversine(
+                coords[i][0], coords[i][1],
+                centroids[j][0], centroids[j][1]
+            )
+
+    # Build sorted assignment candidates: (distance, point_idx, centroid_idx)
+    candidates = []
+    for i in range(n_points):
+        for j in range(k):
+            candidates.append((distances[i, j], i, j))
+    candidates.sort(key=lambda x: x[0])
+
+    # Greedy assignment: closest first, skip if cluster is full
+    assigned = set()
+    for dist, pt, cid in candidates:
+        if pt in assigned:
+            continue
+        if cluster_counts[cid] < max_size:
+            labels[pt] = cid
+            cluster_counts[cid] += 1
+            assigned.add(pt)
+        if len(assigned) == n_points:
+            break
+
+    # Safety: assign any remaining unassigned points to the least-full cluster
+    for i in range(n_points):
+        if labels[i] == -1:
+            least_full = np.argmin(cluster_counts)
+            labels[i] = least_full
+            cluster_counts[least_full] += 1
+
+    return labels
 
 
 def nearest_neighbor(D):
@@ -56,13 +112,19 @@ def two_opt(route, D):
     return best
 
 
-def optimize_routes(file_path, num_clusters=20):
+def optimize_routes(file_path, num_clusters=20, max_cluster_size=None):
     """
     Main optimization function.
     Reads an Excel file, clusters delivery points, and optimizes routes.
-    
+
+    Args:
+        file_path: Path to the Excel file with shipment data.
+        num_clusters: Number of trucks/clusters (used when max_cluster_size is None).
+        max_cluster_size: Max houses per truck. If provided, num_clusters is
+                          computed automatically as ceil(total_houses / max_cluster_size).
+
     Returns:
-        dict with keys: depot, routes, summary, num_clusters
+        dict with keys: depot, routes, summary, num_clusters, etc.
     """
     xls = pd.ExcelFile(file_path)
     shipments = pd.read_excel(xls, 'Shipments_Data')
@@ -75,10 +137,24 @@ def optimize_routes(file_path, num_clusters=20):
     # House coordinates
     coords = shipments[['Latitude', 'Longitude']].dropna().values
 
-    # K-Means clustering
-    k = min(num_clusters, len(coords))
+    # Determine number of clusters
+    if max_cluster_size and max_cluster_size > 0:
+        k = int(ceil(len(coords) / max_cluster_size))
+        k = max(1, min(k, len(coords)))  # Clamp to valid range
+    else:
+        k = min(num_clusters, len(coords))
+        max_cluster_size = None  # Ensure it's None for plain K-Means path
+
+    # K-Means to find good spatial centroids
     kmeans = KMeans(n_clusters=k, random_state=42, n_init='auto')
-    labels = kmeans.fit_predict(coords)
+    kmeans.fit(coords)
+
+    # Assign labels — balanced if max_cluster_size is set, plain K-Means otherwise
+    if max_cluster_size:
+        labels = balanced_cluster_assignment(coords, kmeans.cluster_centers_, max_cluster_size)
+    else:
+        labels = kmeans.labels_
+
     shipments_clean = shipments[['Latitude', 'Longitude']].dropna().copy()
     shipments_clean['cluster'] = labels
 
@@ -123,7 +199,7 @@ def optimize_routes(file_path, num_clusters=20):
 
     total_distance = round(sum(s['distance_km'] for s in summaries), 2)
 
-    return {
+    result = {
         "depot": {"lat": depot[0], "lon": depot[1]},
         "routes": routes,
         "summary": summaries,
@@ -131,3 +207,8 @@ def optimize_routes(file_path, num_clusters=20):
         "total_distance_km": total_distance,
         "total_houses": len(coords),
     }
+
+    if max_cluster_size:
+        result["max_cluster_size"] = max_cluster_size
+
+    return result

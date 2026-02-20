@@ -51,13 +51,14 @@ def optimize():
         return jsonify({"error": "Only .xlsx or .xls files are accepted"}), 400
 
     num_clusters = request.args.get('clusters', 20, type=int)
+    cluster_size = request.args.get('cluster_size', None, type=int)
 
     # Save to temp file with unique name to avoid conflicts
     temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{os.getpid()}_{file.filename}")
     file.save(temp_path)
 
     try:
-        result = optimize_routes(temp_path, num_clusters=num_clusters)
+        result = optimize_routes(temp_path, num_clusters=num_clusters, max_cluster_size=cluster_size)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -80,9 +81,10 @@ def optimize_demo():
         return jsonify({"error": "Demo Excel file not found"}), 404
 
     num_clusters = request.args.get('clusters', 20, type=int)
+    cluster_size = request.args.get('cluster_size', None, type=int)
 
     try:
-        result = optimize_routes(demo_path, num_clusters=num_clusters)
+        result = optimize_routes(demo_path, num_clusters=num_clusters, max_cluster_size=cluster_size)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
